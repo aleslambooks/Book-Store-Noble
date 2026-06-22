@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ALESLAM Book Store API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: books
+    description: Book operations
+  - name: orders
+    description: Order operations
+  - name: categories
+    description: Category operations
+  - name: stats
+    description: Store statistics
+
 paths:
   /healthz:
     get:
@@ -24,6 +33,351 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List all books
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: featured
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: bestSeller
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: newArrival
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: onSale
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: minPrice
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: inStock
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookList"
+
+    post:
+      operationId: createBook
+      tags: [books]
+      summary: Create a book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+
+  /books/{id}:
+    get:
+      operationId: getBook
+      tags: [books]
+      summary: Get a book by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Book details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateBook
+      tags: [books]
+      summary: Update a book
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookUpdate"
+      responses:
+        "200":
+          description: Updated book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      summary: Delete a book
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /books/featured:
+    get:
+      operationId: getFeaturedBooks
+      tags: [books]
+      summary: Get featured books
+      responses:
+        "200":
+          description: Featured books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+  /books/best-sellers:
+    get:
+      operationId: getBestSellers
+      tags: [books]
+      summary: Get best seller books
+      responses:
+        "200":
+          description: Best sellers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+  /books/new-arrivals:
+    get:
+      operationId: getNewArrivals
+      tags: [books]
+      summary: Get new arrival books
+      responses:
+        "200":
+          description: New arrivals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+  /books/on-sale:
+    get:
+      operationId: getBooksOnSale
+      tags: [books]
+      summary: Get books on sale
+      responses:
+        "200":
+          description: Books on sale
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories with book counts
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List all orders (admin)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/track:
+    get:
+      operationId: trackOrder
+      tags: [orders]
+      summary: Track order by order ID or phone
+      parameters:
+        - name: orderId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: phone
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order tracking info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Update order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /stats/store:
+    get:
+      operationId: getStoreStats
+      tags: [stats]
+      summary: Get store statistics
+      responses:
+        "200":
+          description: Store statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +388,325 @@ components:
       required:
         - status
 
+    Book:
+      type: object
+      required:
+        - id
+        - title
+        - titleAr
+        - author
+        - authorAr
+        - price
+        - category
+        - stock
+        - createdAt
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        titleAr:
+          type: string
+        author:
+          type: string
+        authorAr:
+          type: string
+        description:
+          type: ["string", "null"]
+        descriptionAr:
+          type: ["string", "null"]
+        coverImage:
+          type: ["string", "null"]
+        price:
+          type: number
+          description: Price in Egyptian Pounds
+        originalPrice:
+          type: ["number", "null"]
+          description: Original price before discount in EGP
+        category:
+          type: string
+          enum: [horror, romance, fantasy, mystery, thriller, sci-fi]
+        stock:
+          type: integer
+        isFeatured:
+          type: boolean
+        isBestSeller:
+          type: boolean
+        isNewArrival:
+          type: boolean
+        isOnSale:
+          type: boolean
+        rating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        soldCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    BookList:
+      type: object
+      required:
+        - books
+        - total
+      properties:
+        books:
+          type: array
+          items:
+            $ref: "#/components/schemas/Book"
+        total:
+          type: integer
+
+    BookInput:
+      type: object
+      required:
+        - title
+        - titleAr
+        - author
+        - authorAr
+        - price
+        - category
+        - stock
+      properties:
+        title:
+          type: string
+        titleAr:
+          type: string
+        author:
+          type: string
+        authorAr:
+          type: string
+        description:
+          type: string
+        descriptionAr:
+          type: string
+        coverImage:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: number
+        category:
+          type: string
+          enum: [horror, romance, fantasy, mystery, thriller, sci-fi]
+        stock:
+          type: integer
+        isFeatured:
+          type: boolean
+        isBestSeller:
+          type: boolean
+        isNewArrival:
+          type: boolean
+        isOnSale:
+          type: boolean
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        titleAr:
+          type: string
+        author:
+          type: string
+        authorAr:
+          type: string
+        description:
+          type: string
+        descriptionAr:
+          type: string
+        coverImage:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: ["number", "null"]
+        category:
+          type: string
+          enum: [horror, romance, fantasy, mystery, thriller, sci-fi]
+        stock:
+          type: integer
+        isFeatured:
+          type: boolean
+        isBestSeller:
+          type: boolean
+        isNewArrival:
+          type: boolean
+        isOnSale:
+          type: boolean
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - nameAr
+        - bookCount
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        nameAr:
+          type: string
+        bookCount:
+          type: integer
+        coverImage:
+          type: ["string", "null"]
+
+    OrderItem:
+      type: object
+      required:
+        - bookId
+        - quantity
+        - price
+        - bookTitle
+        - bookTitleAr
+      properties:
+        id:
+          type: integer
+        bookId:
+          type: integer
+        bookTitle:
+          type: string
+        bookTitleAr:
+          type: string
+        bookCover:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        price:
+          type: number
+
+    OrderItemInput:
+      type: object
+      required:
+        - bookId
+        - quantity
+      properties:
+        bookId:
+          type: integer
+        quantity:
+          type: integer
+
+    Order:
+      type: object
+      required:
+        - id
+        - orderId
+        - customerName
+        - phone
+        - governorate
+        - city
+        - address
+        - items
+        - totalPrice
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: string
+        customerName:
+          type: string
+        phone:
+          type: string
+        whatsapp:
+          type: ["string", "null"]
+        governorate:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        landmark:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        totalPrice:
+          type: number
+        status:
+          type: string
+          enum: [new, confirmed, processing, shipped, delivered, cancelled]
+        whatsappSent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    OrderInput:
+      type: object
+      required:
+        - customerName
+        - phone
+        - governorate
+        - city
+        - address
+        - items
+      properties:
+        customerName:
+          type: string
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        governorate:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        landmark:
+          type: string
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+
+    OrderStatusUpdate:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [new, confirmed, processing, shipped, delivered, cancelled]
+
+    StoreStats:
+      type: object
+      required:
+        - totalBooks
+        - totalOrders
+        - newOrders
+        - totalRevenue
+        - categoryBreakdown
+      properties:
+        totalBooks:
+          type: integer
+        totalOrders:
+          type: integer
+        newOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        categoryBreakdown:
+          type: array
+          items:
+            type: object
+            required:
+              - category
+              - count
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
