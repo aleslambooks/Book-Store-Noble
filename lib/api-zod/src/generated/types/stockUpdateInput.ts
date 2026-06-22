@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListOrdersParams = {
-status?: string;
-search?: string;
-};
+export interface StockUpdateInput {
+  bookId: number;
+  stock: number;
+}

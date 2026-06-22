@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -44,8 +43,8 @@ export const ListBooksResponse = zod.object({
   "description": zod.string().nullish(),
   "descriptionAr": zod.string().nullish(),
   "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
   "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
   "stock": zod.number(),
   "isFeatured": zod.boolean().optional(),
@@ -84,6 +83,118 @@ export const CreateBookBody = zod.object({
 
 
 /**
+ * @summary Get featured books
+ */
+export const GetFeaturedBooksResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "titleAr": zod.string(),
+  "author": zod.string(),
+  "authorAr": zod.string(),
+  "description": zod.string().nullish(),
+  "descriptionAr": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
+  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
+  "stock": zod.number(),
+  "isFeatured": zod.boolean().optional(),
+  "isBestSeller": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "isOnSale": zod.boolean().optional(),
+  "rating": zod.number().nullish(),
+  "reviewCount": zod.number().optional(),
+  "soldCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const GetFeaturedBooksResponse = zod.array(GetFeaturedBooksResponseItem)
+
+
+/**
+ * @summary Get best seller books
+ */
+export const GetBestSellersResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "titleAr": zod.string(),
+  "author": zod.string(),
+  "authorAr": zod.string(),
+  "description": zod.string().nullish(),
+  "descriptionAr": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
+  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
+  "stock": zod.number(),
+  "isFeatured": zod.boolean().optional(),
+  "isBestSeller": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "isOnSale": zod.boolean().optional(),
+  "rating": zod.number().nullish(),
+  "reviewCount": zod.number().optional(),
+  "soldCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const GetBestSellersResponse = zod.array(GetBestSellersResponseItem)
+
+
+/**
+ * @summary Get new arrival books
+ */
+export const GetNewArrivalsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "titleAr": zod.string(),
+  "author": zod.string(),
+  "authorAr": zod.string(),
+  "description": zod.string().nullish(),
+  "descriptionAr": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
+  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
+  "stock": zod.number(),
+  "isFeatured": zod.boolean().optional(),
+  "isBestSeller": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "isOnSale": zod.boolean().optional(),
+  "rating": zod.number().nullish(),
+  "reviewCount": zod.number().optional(),
+  "soldCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const GetNewArrivalsResponse = zod.array(GetNewArrivalsResponseItem)
+
+
+/**
+ * @summary Get books on sale
+ */
+export const GetBooksOnSaleResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "titleAr": zod.string(),
+  "author": zod.string(),
+  "authorAr": zod.string(),
+  "description": zod.string().nullish(),
+  "descriptionAr": zod.string().nullish(),
+  "coverImage": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
+  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
+  "stock": zod.number(),
+  "isFeatured": zod.boolean().optional(),
+  "isBestSeller": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "isOnSale": zod.boolean().optional(),
+  "rating": zod.number().nullish(),
+  "reviewCount": zod.number().optional(),
+  "soldCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const GetBooksOnSaleResponse = zod.array(GetBooksOnSaleResponseItem)
+
+
+/**
  * @summary Get a book by ID
  */
 export const GetBookParams = zod.object({
@@ -99,8 +210,8 @@ export const GetBookResponse = zod.object({
   "description": zod.string().nullish(),
   "descriptionAr": zod.string().nullish(),
   "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
   "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
   "stock": zod.number(),
   "isFeatured": zod.boolean().optional(),
@@ -148,8 +259,8 @@ export const UpdateBookResponse = zod.object({
   "description": zod.string().nullish(),
   "descriptionAr": zod.string().nullish(),
   "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
+  "price": zod.number(),
+  "originalPrice": zod.number().nullish(),
   "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
   "stock": zod.number(),
   "isFeatured": zod.boolean().optional(),
@@ -172,118 +283,6 @@ export const DeleteBookParams = zod.object({
 
 
 /**
- * @summary Get featured books
- */
-export const GetFeaturedBooksResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "titleAr": zod.string(),
-  "author": zod.string(),
-  "authorAr": zod.string(),
-  "description": zod.string().nullish(),
-  "descriptionAr": zod.string().nullish(),
-  "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
-  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
-  "stock": zod.number(),
-  "isFeatured": zod.boolean().optional(),
-  "isBestSeller": zod.boolean().optional(),
-  "isNewArrival": zod.boolean().optional(),
-  "isOnSale": zod.boolean().optional(),
-  "rating": zod.number().nullish(),
-  "reviewCount": zod.number().optional(),
-  "soldCount": zod.number().optional(),
-  "createdAt": zod.coerce.date()
-})
-export const GetFeaturedBooksResponse = zod.array(GetFeaturedBooksResponseItem)
-
-
-/**
- * @summary Get best seller books
- */
-export const GetBestSellersResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "titleAr": zod.string(),
-  "author": zod.string(),
-  "authorAr": zod.string(),
-  "description": zod.string().nullish(),
-  "descriptionAr": zod.string().nullish(),
-  "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
-  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
-  "stock": zod.number(),
-  "isFeatured": zod.boolean().optional(),
-  "isBestSeller": zod.boolean().optional(),
-  "isNewArrival": zod.boolean().optional(),
-  "isOnSale": zod.boolean().optional(),
-  "rating": zod.number().nullish(),
-  "reviewCount": zod.number().optional(),
-  "soldCount": zod.number().optional(),
-  "createdAt": zod.coerce.date()
-})
-export const GetBestSellersResponse = zod.array(GetBestSellersResponseItem)
-
-
-/**
- * @summary Get new arrival books
- */
-export const GetNewArrivalsResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "titleAr": zod.string(),
-  "author": zod.string(),
-  "authorAr": zod.string(),
-  "description": zod.string().nullish(),
-  "descriptionAr": zod.string().nullish(),
-  "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
-  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
-  "stock": zod.number(),
-  "isFeatured": zod.boolean().optional(),
-  "isBestSeller": zod.boolean().optional(),
-  "isNewArrival": zod.boolean().optional(),
-  "isOnSale": zod.boolean().optional(),
-  "rating": zod.number().nullish(),
-  "reviewCount": zod.number().optional(),
-  "soldCount": zod.number().optional(),
-  "createdAt": zod.coerce.date()
-})
-export const GetNewArrivalsResponse = zod.array(GetNewArrivalsResponseItem)
-
-
-/**
- * @summary Get books on sale
- */
-export const GetBooksOnSaleResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "titleAr": zod.string(),
-  "author": zod.string(),
-  "authorAr": zod.string(),
-  "description": zod.string().nullish(),
-  "descriptionAr": zod.string().nullish(),
-  "coverImage": zod.string().nullish(),
-  "price": zod.number().describe('Price in Egyptian Pounds'),
-  "originalPrice": zod.number().nullish().describe('Original price before discount in EGP'),
-  "category": zod.enum(['horror', 'romance', 'fantasy', 'mystery', 'thriller', 'sci-fi']),
-  "stock": zod.number(),
-  "isFeatured": zod.boolean().optional(),
-  "isBestSeller": zod.boolean().optional(),
-  "isNewArrival": zod.boolean().optional(),
-  "isOnSale": zod.boolean().optional(),
-  "rating": zod.number().nullish(),
-  "reviewCount": zod.number().optional(),
-  "soldCount": zod.number().optional(),
-  "createdAt": zod.coerce.date()
-})
-export const GetBooksOnSaleResponse = zod.array(GetBooksOnSaleResponseItem)
-
-
-/**
  * @summary List all categories with book counts
  */
 export const ListCategoriesResponseItem = zod.object({
@@ -297,10 +296,11 @@ export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
 /**
- * @summary List all orders (admin)
+ * @summary List all orders
  */
 export const ListOrdersQueryParams = zod.object({
-  "status": zod.coerce.string().optional()
+  "status": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional()
 })
 
 export const ListOrdersResponseItem = zod.object({
@@ -469,6 +469,180 @@ export const GetStoreStatsResponse = zod.object({
   "category": zod.string(),
   "count": zod.number()
 }))
+})
+
+
+/**
+ * @summary Admin login
+ */
+export const AdminLoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const AdminLoginResponse = zod.object({
+  "token": zod.string(),
+  "admin": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['super_admin', 'manager', 'support']),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Get current admin info
+ */
+export const GetAdminMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['super_admin', 'manager', 'support']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List all customers (derived from orders)
+ */
+export const ListCustomersQueryParams = zod.object({
+  "search": zod.coerce.string().optional()
+})
+
+export const ListCustomersResponseItem = zod.object({
+  "phone": zod.string(),
+  "customerName": zod.string(),
+  "whatsapp": zod.string().nullish(),
+  "governorate": zod.string().nullish(),
+  "orderCount": zod.number(),
+  "totalSpending": zod.number(),
+  "lastOrderDate": zod.coerce.date()
+})
+export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
+
+
+/**
+ * @summary Get analytics data
+ */
+export const GetAnalyticsQueryParams = zod.object({
+  "period": zod.enum(['7d', '30d', '90d']).optional()
+})
+
+export const GetAnalyticsResponse = zod.object({
+  "totalRevenue": zod.number(),
+  "totalOrders": zod.number(),
+  "dailySales": zod.array(zod.object({
+  "date": zod.string(),
+  "revenue": zod.number(),
+  "orders": zod.number()
+})),
+  "topBooks": zod.array(zod.object({
+  "bookId": zod.number(),
+  "titleAr": zod.string(),
+  "coverImage": zod.string().nullish(),
+  "soldCount": zod.number(),
+  "revenue": zod.number()
+})),
+  "categoryRevenue": zod.array(zod.object({
+  "category": zod.string(),
+  "revenue": zod.number(),
+  "orders": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get all site settings
+ */
+export const GetSiteSettingsResponse = zod.object({
+  "whatsappNumber": zod.string(),
+  "whatsappEnabled": zod.boolean(),
+  "ownerMessageTemplate": zod.string(),
+  "customerMessageTemplate": zod.string(),
+  "heroTitle": zod.string(),
+  "heroSubtitle": zod.string(),
+  "lowStockThreshold": zod.number()
+})
+
+
+/**
+ * @summary Update site settings
+ */
+export const UpdateSiteSettingsBody = zod.object({
+  "whatsappNumber": zod.string().optional(),
+  "whatsappEnabled": zod.boolean().optional(),
+  "ownerMessageTemplate": zod.string().optional(),
+  "customerMessageTemplate": zod.string().optional(),
+  "heroTitle": zod.string().optional(),
+  "heroSubtitle": zod.string().optional(),
+  "lowStockThreshold": zod.number().optional()
+})
+
+export const UpdateSiteSettingsResponse = zod.object({
+  "whatsappNumber": zod.string(),
+  "whatsappEnabled": zod.boolean(),
+  "ownerMessageTemplate": zod.string(),
+  "customerMessageTemplate": zod.string(),
+  "heroTitle": zod.string(),
+  "heroSubtitle": zod.string(),
+  "lowStockThreshold": zod.number()
+})
+
+
+/**
+ * @summary List activity logs
+ */
+export const ListActivityLogsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "offset": zod.coerce.number().optional()
+})
+
+export const ListActivityLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "adminName": zod.string(),
+  "action": zod.string(),
+  "details": zod.string(),
+  "ipAddress": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListActivityLogsResponse = zod.array(ListActivityLogsResponseItem)
+
+
+/**
+ * @summary Get inventory overview (books with stock info)
+ */
+export const GetInventoryResponseItem = zod.object({
+  "id": zod.number(),
+  "titleAr": zod.string(),
+  "coverImage": zod.string().nullish(),
+  "category": zod.string(),
+  "stock": zod.number(),
+  "soldCount": zod.number(),
+  "price": zod.number().optional(),
+  "status": zod.enum(['in_stock', 'low_stock', 'out_of_stock'])
+})
+export const GetInventoryResponse = zod.array(GetInventoryResponseItem)
+
+
+/**
+ * @summary Update stock for a book
+ */
+export const UpdateStockBody = zod.object({
+  "bookId": zod.number(),
+  "stock": zod.number()
+})
+
+export const UpdateStockResponse = zod.object({
+  "id": zod.number(),
+  "titleAr": zod.string(),
+  "coverImage": zod.string().nullish(),
+  "category": zod.string(),
+  "stock": zod.number(),
+  "soldCount": zod.number(),
+  "price": zod.number().optional(),
+  "status": zod.enum(['in_stock', 'low_stock', 'out_of_stock'])
 })
 
 

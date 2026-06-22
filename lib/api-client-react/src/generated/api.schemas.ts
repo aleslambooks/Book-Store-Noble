@@ -33,12 +33,8 @@ export interface Book {
   descriptionAr?: string | null;
   /** @nullable */
   coverImage?: string | null;
-  /** Price in Egyptian Pounds */
   price: number;
-  /**
-     * Original price before discount in EGP
-     * @nullable
-     */
+  /** @nullable */
   originalPrice?: number | null;
   category: BookCategory;
   stock: number;
@@ -218,6 +214,129 @@ export interface StoreStats {
   categoryBreakdown: StoreStatsCategoryBreakdownItem[];
 }
 
+export interface AdminLoginInput {
+  email: string;
+  password: string;
+}
+
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
+
+
+export const AdminUserRole = {
+  super_admin: 'super_admin',
+  manager: 'manager',
+  support: 'support',
+} as const;
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  role: AdminUserRole;
+  createdAt: string;
+}
+
+export interface AdminLoginResponse {
+  token: string;
+  admin: AdminUser;
+}
+
+export interface Customer {
+  phone: string;
+  customerName: string;
+  /** @nullable */
+  whatsapp?: string | null;
+  /** @nullable */
+  governorate?: string | null;
+  orderCount: number;
+  totalSpending: number;
+  lastOrderDate: string;
+}
+
+export type AnalyticsDailySalesItem = {
+  date: string;
+  revenue: number;
+  orders: number;
+};
+
+export type AnalyticsTopBooksItem = {
+  bookId: number;
+  titleAr: string;
+  /** @nullable */
+  coverImage?: string | null;
+  soldCount: number;
+  revenue: number;
+};
+
+export type AnalyticsCategoryRevenueItem = {
+  category: string;
+  revenue: number;
+  orders: number;
+};
+
+export interface Analytics {
+  totalRevenue: number;
+  totalOrders: number;
+  dailySales: AnalyticsDailySalesItem[];
+  topBooks: AnalyticsTopBooksItem[];
+  categoryRevenue: AnalyticsCategoryRevenueItem[];
+}
+
+export interface SiteSettings {
+  whatsappNumber: string;
+  whatsappEnabled: boolean;
+  ownerMessageTemplate: string;
+  customerMessageTemplate: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  lowStockThreshold: number;
+}
+
+export interface SiteSettingsInput {
+  whatsappNumber?: string;
+  whatsappEnabled?: boolean;
+  ownerMessageTemplate?: string;
+  customerMessageTemplate?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  lowStockThreshold?: number;
+}
+
+export interface ActivityLog {
+  id: number;
+  adminName: string;
+  action: string;
+  details: string;
+  ipAddress: string;
+  createdAt: string;
+}
+
+export type InventoryItemStatus = typeof InventoryItemStatus[keyof typeof InventoryItemStatus];
+
+
+export const InventoryItemStatus = {
+  in_stock: 'in_stock',
+  low_stock: 'low_stock',
+  out_of_stock: 'out_of_stock',
+} as const;
+
+export interface InventoryItem {
+  id: number;
+  titleAr: string;
+  /** @nullable */
+  coverImage?: string | null;
+  category: string;
+  stock: number;
+  soldCount: number;
+  price?: number;
+  status: InventoryItemStatus;
+}
+
+export interface StockUpdateInput {
+  bookId: number;
+  stock: number;
+}
+
 export type ListBooksParams = {
 category?: string;
 search?: string;
@@ -234,10 +353,33 @@ offset?: number;
 
 export type ListOrdersParams = {
 status?: string;
+search?: string;
 };
 
 export type TrackOrderParams = {
 orderId?: string;
 phone?: string;
+};
+
+export type ListCustomersParams = {
+search?: string;
+};
+
+export type GetAnalyticsParams = {
+period?: GetAnalyticsPeriod;
+};
+
+export type GetAnalyticsPeriod = typeof GetAnalyticsPeriod[keyof typeof GetAnalyticsPeriod];
+
+
+export const GetAnalyticsPeriod = {
+  '7d': '7d',
+  '30d': '30d',
+  '90d': '90d',
+} as const;
+
+export type ListActivityLogsParams = {
+limit?: number;
+offset?: number;
 };
 

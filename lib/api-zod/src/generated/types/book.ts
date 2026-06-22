@@ -19,12 +19,8 @@ export interface Book {
   descriptionAr?: string | null;
   /** @nullable */
   coverImage?: string | null;
-  /** Price in Egyptian Pounds */
   price: number;
-  /**
-     * Original price before discount in EGP
-     * @nullable
-     */
+  /** @nullable */
   originalPrice?: number | null;
   category: BookCategory;
   stock: number;

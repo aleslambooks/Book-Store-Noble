@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListOrdersParams = {
-status?: string;
+export type ListCustomersParams = {
 search?: string;
 };

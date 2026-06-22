@@ -6,6 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activityLog';
+export * from './adminLoginInput';
+export * from './adminLoginResponse';
+export * from './adminUser';
+export * from './adminUserRole';
+export * from './analytics';
+export * from './analyticsCategoryRevenueItem';
+export * from './analyticsDailySalesItem';
+export * from './analyticsTopBooksItem';
 export * from './book';
 export * from './bookCategory';
 export * from './bookInput';
@@ -14,8 +23,15 @@ export * from './bookList';
 export * from './bookUpdate';
 export * from './bookUpdateCategory';
 export * from './category';
+export * from './customer';
+export * from './getAnalyticsParams';
+export * from './getAnalyticsPeriod';
 export * from './healthStatus';
+export * from './inventoryItem';
+export * from './inventoryItemStatus';
+export * from './listActivityLogsParams';
 export * from './listBooksParams';
+export * from './listCustomersParams';
 export * from './listOrdersParams';
 export * from './order';
 export * from './orderInput';
@@ -24,6 +40,9 @@ export * from './orderItemInput';
 export * from './orderStatus';
 export * from './orderStatusUpdate';
 export * from './orderStatusUpdateStatus';
+export * from './siteSettings';
+export * from './siteSettingsInput';
+export * from './stockUpdateInput';
 export * from './storeStats';
 export * from './storeStatsCategoryBreakdownItem';
 export * from './trackOrderParams';

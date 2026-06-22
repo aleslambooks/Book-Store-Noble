@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListOrdersParams = {
-status?: string;
-search?: string;
+export type AnalyticsDailySalesItem = {
+  date: string;
+  revenue: number;
+  orders: number;
 };

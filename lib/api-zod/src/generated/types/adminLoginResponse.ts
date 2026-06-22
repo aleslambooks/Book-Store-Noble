@@ -5,8 +5,9 @@
  * ALESLAM Book Store API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminUser } from './adminUser';
 
-export type ListOrdersParams = {
-status?: string;
-search?: string;
-};
+export interface AdminLoginResponse {
+  token: string;
+  admin: AdminUser;
+}

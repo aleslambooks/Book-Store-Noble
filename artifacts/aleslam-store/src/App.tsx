@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/hooks/use-cart";
+import { AdminAuthProvider } from "@/hooks/use-admin-auth";
+import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 
 import Home from "@/pages/home";
 import Books from "@/pages/books";
@@ -12,15 +14,11 @@ import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import TrackOrder from "@/pages/track-order";
 import Admin from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
-    },
-  },
+  defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5 * 60 * 1000 } },
 });
 
 function Router() {
@@ -32,7 +30,10 @@ function Router() {
       <Route path="/cart" component={Cart} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/track" component={TrackOrder} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin">
+        <AdminProtectedRoute><Admin /></AdminProtectedRoute>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -43,12 +44,14 @@ function App() {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <CartProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </CartProvider>
+          <AdminAuthProvider>
+            <CartProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </CartProvider>
+          </AdminAuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

@@ -5,8 +5,8 @@
  * ALESLAM Book Store API
  * OpenAPI spec version: 0.1.0
  */
+import type { GetAnalyticsPeriod } from './getAnalyticsPeriod';
 
-export type ListOrdersParams = {
-status?: string;
-search?: string;
+export type GetAnalyticsParams = {
+period?: GetAnalyticsPeriod;
 };
