@@ -6,6 +6,7 @@ import ordersRouter from "./orders";
 import statsRouter from "./stats";
 import adminAuthRouter from "./admin-auth";
 import adminDataRouter from "./admin-data";
+import speedInsightsRouter from "./speed-insights";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(ordersRouter);
 router.use(statsRouter);
 router.use(adminAuthRouter);
 router.use(adminDataRouter);
+router.use(speedInsightsRouter);
 
 export default router;
