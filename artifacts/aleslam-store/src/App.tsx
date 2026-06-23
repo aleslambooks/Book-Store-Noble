@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/hooks/use-cart";
 import { AdminAuthProvider } from "@/hooks/use-admin-auth";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import Home from "@/pages/home";
 import Books from "@/pages/books";
@@ -50,6 +51,7 @@ function App() {
                 <Router />
               </WouterRouter>
               <Toaster />
+              <SpeedInsights />
             </CartProvider>
           </AdminAuthProvider>
         </TooltipProvider>
