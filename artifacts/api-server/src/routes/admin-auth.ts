@@ -7,15 +7,18 @@ import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import { AdminLoginBody } from "@workspace/api-zod";
 import { requireAdmin, logActivity, type AdminRequest } from "../middleware/adminAuth";
+import { getClientIp } from "../lib/helpers";
 
 const router = Router();
 
+// Tighter rate-limit on login to slow brute-force attempts
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 min window
   max: 10,
   message: { error: "Too many login attempts. Try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // don't penalise successful logins
 });
 
 // POST /admin/login
@@ -27,20 +30,18 @@ router.post("/admin/login", loginLimiter, async (req, res) => {
       .from(adminUsersTable)
       .where(eq(adminUsersTable.email, body.email));
 
-    if (!admin || !admin.isActive) {
-      res.status(401).json({ error: "بيانات الدخول غير صحيحة" });
-      return;
-    }
+    // Constant-time comparison guard: always run bcrypt even on missing user
+    const passwordHash = admin?.passwordHash ?? "$2a$12$invalidhashpadding000000000000000000000000000000000000";
+    const valid = await bcrypt.compare(body.password, passwordHash);
 
-    const valid = await bcrypt.compare(body.password, admin.passwordHash);
-    if (!valid) {
+    if (!admin || !admin.isActive || !valid) {
       res.status(401).json({ error: "بيانات الدخول غير صحيحة" });
       return;
     }
 
     const token = crypto.randomBytes(64).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-    const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "";
+    const ip = getClientIp(req);
 
     await db.insert(adminSessionsTable).values({
       adminId: admin.id,
@@ -72,7 +73,7 @@ router.post("/admin/logout", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const token = req.headers["authorization"]?.slice(7) ?? "";
     await db.delete(adminSessionsTable).where(eq(adminSessionsTable.token, token));
-    await logActivity(req.admin!.id, req.admin!.name, "LOGOUT", "تسجيل خروج", "");
+    await logActivity(req.admin!.id, req.admin!.name, "LOGOUT", "تسجيل خروج", getClientIp(req));
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Admin logout failed");
@@ -81,7 +82,7 @@ router.post("/admin/logout", requireAdmin, async (req: AdminRequest, res) => {
 });
 
 // GET /admin/me
-router.get("/admin/me", requireAdmin, async (req: AdminRequest, res) => {
+router.get("/admin/me", requireAdmin, (req: AdminRequest, res) => {
   res.json({
     id: req.admin!.id,
     email: req.admin!.email,

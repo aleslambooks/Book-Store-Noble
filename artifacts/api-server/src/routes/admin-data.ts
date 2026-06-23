@@ -1,35 +1,76 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, orderItemsTable, booksTable, activityLogsTable, siteSettingsTable } from "@workspace/db";
-import { eq, desc, sql, ilike, or } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { requireAdmin, logActivity, type AdminRequest } from "../middleware/adminAuth";
 import { UpdateSiteSettingsBody, UpdateStockBody } from "@workspace/api-zod";
+import { getClientIp } from "../lib/helpers";
 
 const router = Router();
+
+// ── Settings helpers ─────────────────────────────────────────────────────────
 
 const DEFAULT_SETTINGS = {
   whatsappNumber: "+201029757694",
   whatsappEnabled: "true",
-  ownerMessageTemplate: "🕯️ طلب جديد من مكتبة ALESLAM\n\nرقم الطلب: {orderId}\nالعميل: {customerName}\nالهاتف: {phone}\nواتساب: {whatsapp}\nالعنوان: {address}\n\nالكتب:\n{items}\n\nالإجمالي: {total} ج.م\nالتاريخ: {date}\nملاحظات: {notes}",
-  customerMessageTemplate: "🕯️ شكراً لطلبك من مكتبة ALESLAM!\n\nرقم طلبك: {orderId}\nالإجمالي: {total} ج.م\n\nسيتم التواصل معك قريباً لتأكيد الطلب.\n📚 نتمنى لك قراءة ممتعة!",
+  ownerMessageTemplate:
+    "🕯️ طلب جديد من مكتبة ALESLAM\n\nرقم الطلب: {orderId}\nالعميل: {customerName}\nالهاتف: {phone}\nواتساب: {whatsapp}\nالعنوان: {address}\n\nالكتب:\n{items}\n\nالإجمالي: {total} ج.م\nالتاريخ: {date}\nملاحظات: {notes}",
+  customerMessageTemplate:
+    "🕯️ شكراً لطلبك من مكتبة ALESLAM!\n\nرقم طلبك: {orderId}\nالإجمالي: {total} ج.م\n\nسيتم التواصل معك قريباً لتأكيد الطلب.\n📚 نتمنى لك قراءة ممتعة!",
   heroTitle: "مكتبة ALESLAM للروايات الفاخرة",
   heroSubtitle: "وجهتك الأولى لأفضل الروايات المترجمة والعربية",
   lowStockThreshold: "5",
-};
+} as const;
 
-async function getSetting(key: string): Promise<string> {
-  const [row] = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key));
-  return row?.value ?? DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS] ?? "";
+type SettingsKey = keyof typeof DEFAULT_SETTINGS;
+
+interface SiteSettingsResponse {
+  whatsappNumber: string;
+  whatsappEnabled: boolean;
+  ownerMessageTemplate: string;
+  customerMessageTemplate: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  lowStockThreshold: number;
 }
 
-async function setSetting(key: string, value: string) {
+async function loadSettingsMap(): Promise<Map<string, string>> {
+  const rows = await db.select().from(siteSettingsTable);
+  return new Map(rows.map((r) => [r.key, r.value]));
+}
+
+function serializeSettings(map: Map<string, string>): SiteSettingsResponse {
+  const get = (key: SettingsKey) => map.get(key) ?? DEFAULT_SETTINGS[key];
+  return {
+    whatsappNumber: get("whatsappNumber"),
+    whatsappEnabled: get("whatsappEnabled") === "true",
+    ownerMessageTemplate: get("ownerMessageTemplate"),
+    customerMessageTemplate: get("customerMessageTemplate"),
+    heroTitle: get("heroTitle"),
+    heroSubtitle: get("heroSubtitle"),
+    lowStockThreshold: Number(get("lowStockThreshold")),
+  };
+}
+
+async function setSetting(key: string, value: string): Promise<void> {
   await db
     .insert(siteSettingsTable)
     .values({ key, value })
     .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value, updatedAt: new Date() } });
 }
 
-// GET /admin/customers
+async function getLowStockThreshold(): Promise<number> {
+  const map = await loadSettingsMap();
+  return Number(map.get("lowStockThreshold") ?? DEFAULT_SETTINGS.lowStockThreshold);
+}
+
+function bookStockStatus(stock: number, threshold: number): "in_stock" | "low_stock" | "out_of_stock" {
+  if (stock === 0) return "out_of_stock";
+  if (stock <= threshold) return "low_stock";
+  return "in_stock";
+}
+
+// ── GET /admin/customers ─────────────────────────────────────────────────────
 router.get("/admin/customers", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const { search } = req.query as { search?: string };
@@ -45,7 +86,12 @@ router.get("/admin/customers", requireAdmin, async (req: AdminRequest, res) => {
         lastOrderDate: sql<Date>`max(${ordersTable.createdAt})`,
       })
       .from(ordersTable)
-      .groupBy(ordersTable.phone, ordersTable.customerName, ordersTable.whatsapp, ordersTable.governorate)
+      .groupBy(
+        ordersTable.phone,
+        ordersTable.customerName,
+        ordersTable.whatsapp,
+        ordersTable.governorate,
+      )
       .orderBy(desc(sql`max(${ordersTable.createdAt})`));
 
     let result = customers.map((c) => ({
@@ -62,8 +108,7 @@ router.get("/admin/customers", requireAdmin, async (req: AdminRequest, res) => {
       const q = search.toLowerCase();
       result = result.filter(
         (c) =>
-          c.customerName.toLowerCase().includes(q) ||
-          c.phone.includes(q)
+          c.customerName.toLowerCase().includes(q) || c.phone.includes(q),
       );
     }
 
@@ -74,12 +119,11 @@ router.get("/admin/customers", requireAdmin, async (req: AdminRequest, res) => {
   }
 });
 
-// GET /admin/analytics
+// ── GET /admin/analytics ─────────────────────────────────────────────────────
 router.get("/admin/analytics", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const period = (req.query.period as string) || "30d";
     const days = period === "7d" ? 7 : period === "90d" ? 90 : 30;
-
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const [totalRevenueResult, totalOrdersResult, dailySales, topBooks, categoryRevenue] =
@@ -107,7 +151,11 @@ router.get("/admin/analytics", requireAdmin, async (req: AdminRequest, res) => {
             revenue: sql<number>`sum(${orderItemsTable.quantity} * ${orderItemsTable.price}::numeric)`,
           })
           .from(orderItemsTable)
-          .groupBy(orderItemsTable.bookId, orderItemsTable.bookTitleAr, orderItemsTable.bookCover)
+          .groupBy(
+            orderItemsTable.bookId,
+            orderItemsTable.bookTitleAr,
+            orderItemsTable.bookCover,
+          )
           .orderBy(desc(sql`sum(${orderItemsTable.quantity})`))
           .limit(10),
         db
@@ -150,34 +198,18 @@ router.get("/admin/analytics", requireAdmin, async (req: AdminRequest, res) => {
   }
 });
 
-// GET /admin/settings
+// ── GET /admin/settings ──────────────────────────────────────────────────────
 router.get("/admin/settings", requireAdmin, async (req: AdminRequest, res) => {
   try {
-    const keys = Object.keys(DEFAULT_SETTINGS);
-    const rows = await db.select().from(siteSettingsTable);
-    const map = new Map(rows.map((r) => [r.key, r.value]));
-
-    const settings: Record<string, any> = {};
-    for (const key of keys) {
-      settings[key] = map.get(key) ?? DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS];
-    }
-
-    res.json({
-      whatsappNumber: settings.whatsappNumber,
-      whatsappEnabled: settings.whatsappEnabled === "true",
-      ownerMessageTemplate: settings.ownerMessageTemplate,
-      customerMessageTemplate: settings.customerMessageTemplate,
-      heroTitle: settings.heroTitle,
-      heroSubtitle: settings.heroSubtitle,
-      lowStockThreshold: Number(settings.lowStockThreshold),
-    });
+    const map = await loadSettingsMap();
+    res.json(serializeSettings(map));
   } catch (err) {
     req.log.error({ err }, "Failed to get settings");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// PATCH /admin/settings
+// ── PATCH /admin/settings ────────────────────────────────────────────────────
 router.patch("/admin/settings", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const body = UpdateSiteSettingsBody.parse(req.body);
@@ -191,47 +223,30 @@ router.patch("/admin/settings", requireAdmin, async (req: AdminRequest, res) => 
     if (body.heroSubtitle !== undefined) updates.push(["heroSubtitle", body.heroSubtitle]);
     if (body.lowStockThreshold !== undefined) updates.push(["lowStockThreshold", String(body.lowStockThreshold)]);
 
-    for (const [key, value] of updates) {
-      await setSetting(key, value);
-    }
+    // Write all settings in parallel
+    await Promise.all(updates.map(([key, value]) => setSetting(key, value)));
 
     await logActivity(
       req.admin!.id,
       req.admin!.name,
       "UPDATE_SETTINGS",
       `تحديث الإعدادات: ${updates.map(([k]) => k).join(", ")}`,
-      (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || ""
+      getClientIp(req),
     );
 
-    // Return updated settings
-    const rows = await db.select().from(siteSettingsTable);
-    const map = new Map(rows.map((r) => [r.key, r.value]));
-    const keys = Object.keys(DEFAULT_SETTINGS);
-    const settings: Record<string, any> = {};
-    for (const key of keys) {
-      settings[key] = map.get(key) ?? DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS];
-    }
-
-    res.json({
-      whatsappNumber: settings.whatsappNumber,
-      whatsappEnabled: settings.whatsappEnabled === "true",
-      ownerMessageTemplate: settings.ownerMessageTemplate,
-      customerMessageTemplate: settings.customerMessageTemplate,
-      heroTitle: settings.heroTitle,
-      heroSubtitle: settings.heroSubtitle,
-      lowStockThreshold: Number(settings.lowStockThreshold),
-    });
+    const map = await loadSettingsMap();
+    res.json(serializeSettings(map));
   } catch (err) {
     req.log.error({ err }, "Failed to update settings");
     res.status(400).json({ error: "Bad request" });
   }
 });
 
-// GET /admin/logs
+// ── GET /admin/logs ──────────────────────────────────────────────────────────
 router.get("/admin/logs", requireAdmin, async (req: AdminRequest, res) => {
   try {
-    const limit = Number(req.query.limit ?? 100);
-    const offset = Number(req.query.offset ?? 0);
+    const limit = Math.min(Number(req.query.limit ?? 100), 500);
+    const offset = Math.max(Number(req.query.offset ?? 0), 0);
 
     const logs = await db
       .select()
@@ -248,7 +263,7 @@ router.get("/admin/logs", requireAdmin, async (req: AdminRequest, res) => {
         details: l.details,
         ipAddress: l.ipAddress,
         createdAt: l.createdAt.toISOString(),
-      }))
+      })),
     );
   } catch (err) {
     req.log.error({ err }, "Failed to get activity logs");
@@ -256,17 +271,13 @@ router.get("/admin/logs", requireAdmin, async (req: AdminRequest, res) => {
   }
 });
 
-// GET /admin/inventory
+// ── GET /admin/inventory ─────────────────────────────────────────────────────
 router.get("/admin/inventory", requireAdmin, async (req: AdminRequest, res) => {
   try {
-    const threshold = 5;
-    const rows = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, "lowStockThreshold"));
-    const thresholdValue = rows[0] ? Number(rows[0].value) : threshold;
-
-    const books = await db
-      .select()
-      .from(booksTable)
-      .orderBy(booksTable.stock);
+    const [threshold, books] = await Promise.all([
+      getLowStockThreshold(),
+      db.select().from(booksTable).orderBy(booksTable.stock),
+    ]);
 
     res.json(
       books.map((b) => ({
@@ -277,13 +288,8 @@ router.get("/admin/inventory", requireAdmin, async (req: AdminRequest, res) => {
         stock: b.stock,
         soldCount: b.soldCount,
         price: Number(b.price),
-        status:
-          b.stock === 0
-            ? "out_of_stock"
-            : b.stock <= thresholdValue
-            ? "low_stock"
-            : "in_stock",
-      }))
+        status: bookStockStatus(b.stock, threshold),
+      })),
     );
   } catch (err) {
     req.log.error({ err }, "Failed to get inventory");
@@ -291,25 +297,31 @@ router.get("/admin/inventory", requireAdmin, async (req: AdminRequest, res) => {
   }
 });
 
-// PATCH /admin/inventory
+// ── PATCH /admin/inventory ───────────────────────────────────────────────────
 router.patch("/admin/inventory", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const body = UpdateStockBody.parse(req.body);
-    const [book] = await db
-      .update(booksTable)
-      .set({ stock: body.stock })
-      .where(eq(booksTable.id, body.bookId))
-      .returning();
 
-    if (!book) { res.status(404).json({ error: "Book not found" }); return; }
+    const [[book], threshold] = await Promise.all([
+      db
+        .update(booksTable)
+        .set({ stock: body.stock })
+        .where(eq(booksTable.id, body.bookId))
+        .returning(),
+      getLowStockThreshold(),
+    ]);
 
-    const threshold = 5;
+    if (!book) {
+      res.status(404).json({ error: "Book not found" });
+      return;
+    }
+
     await logActivity(
       req.admin!.id,
       req.admin!.name,
       "UPDATE_STOCK",
       `تحديث مخزون "${book.titleAr}" إلى ${body.stock}`,
-      (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || ""
+      getClientIp(req),
     );
 
     res.json({
@@ -320,7 +332,7 @@ router.patch("/admin/inventory", requireAdmin, async (req: AdminRequest, res) =>
       stock: book.stock,
       soldCount: book.soldCount,
       price: Number(book.price),
-      status: book.stock === 0 ? "out_of_stock" : book.stock <= threshold ? "low_stock" : "in_stock",
+      status: bookStockStatus(book.stock, threshold),
     });
   } catch (err) {
     req.log.error({ err }, "Failed to update stock");
