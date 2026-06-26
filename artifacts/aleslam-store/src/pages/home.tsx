@@ -6,11 +6,10 @@ import { Link } from 'wouter';
 import { 
   useGetFeaturedBooks, 
   useGetBestSellers, 
-  useGetNewArrivals, 
-  useGetBooksOnSale,
+  useGetNewArrivals,
   useListCategories
 } from '@workspace/api-client-react';
-import { Ghost, Sparkles, Flame, Percent, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sparkles, Flame, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -163,7 +162,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bestsellers Section (Darker variant) */}
+      {/* Bestsellers Section */}
       <section className="py-24 bg-card/50 relative border-y border-border/20">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600189261867-30e5ffe7b8da?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-5 mix-blend-overlay" />
         <div className="container mx-auto px-4 relative z-10">
@@ -186,6 +185,42 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* New Arrivals Section */}
+      <section className="py-24 relative">
+        <div className="container mx-auto px-4">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-2">
+                <Sparkles className="w-5 h-5" />
+                <span className="font-bold tracking-wider">وصل حديثاً</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold">أحدث الإصدارات</h2>
+            </div>
+            <Link href="/books?newArrival=true">
+              <Button variant="ghost" className="hidden md:flex gap-2 text-muted-foreground hover:text-primary">
+                عرض الكل <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          {loadingNewArrivals ? (
+            <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+              {newArrivals?.slice(0, 5).map((book, i) => (
+                <BookCard key={book.id} book={book} index={i} />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-8 text-center md:hidden">
+            <Link href="/books?newArrival=true">
+              <Button variant="outline" className="w-full rounded-full">عرض الكل</Button>
+            </Link>
+          </div>
         </div>
       </section>
 

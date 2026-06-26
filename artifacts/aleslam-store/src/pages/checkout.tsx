@@ -15,11 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { CheckCircle2, Loader2, MessageCircle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 
 const GOVERNORATES = [
   'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم', 'الغربية',
-  'المنوفية', 'المنوفية', 'المنيا', 'القليوبية', 'الشرقية', 'دمياط', 'كفر الشيخ', 'الإسماعيلية',
-  'بورسعيد', 'السويس', 'أسيوط', 'بني سويف', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'مطروح', 'جنوب سيناء', 'شمال سيناء', 'الوادي الجديد'
+  'المنوفية', 'المنيا', 'القليوبية', 'الشرقية', 'دمياط', 'كفر الشيخ', 'الإسماعيلية',
+  'بورسعيد', 'السويس', 'أسيوط', 'بني سويف', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'مطروح',
+  'جنوب سيناء', 'شمال سيناء', 'الوادي الجديد'
 ];
 
 const checkoutSchema = z.object({
@@ -40,6 +42,7 @@ export default function Checkout() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
+  const { toast } = useToast();
   
   const [successOrder, setSuccessOrder] = useState<{ id: string, whatsappUrl: string } | null>(null);
 
@@ -63,22 +66,20 @@ export default function Checkout() {
   }
 
   const onSubmit = async (data: CheckoutFormValues) => {
-    try {
-      const orderData = {
-        ...data,
-        items: items.map(i => ({
-          bookId: i.book.id,
-          quantity: i.quantity,
-        })),
-      };
+    const orderData = {
+      ...data,
+      items: items.map(i => ({
+        bookId: i.book.id,
+        quantity: i.quantity,
+      })),
+    };
 
-      createOrder.mutate({ data: orderData }, {
-        onSuccess: (order) => {
-          queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
-          
-          // Generate WhatsApp Message
-          const itemsList = items.map(i => `- ${i.book.titleAr} (${i.quantity})`).join('\n');
-          const message = `*طلب جديد من متجر الإسلام* 🕯️
+    createOrder.mutate({ data: orderData }, {
+      onSuccess: (order) => {
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
+        
+        const itemsList = items.map(i => `- ${i.book.titleAr} (${i.quantity})`).join('\n');
+        const message = `*طلب جديد من متجر الإسلام* 🕯️
 *رقم الطلب:* ${order.orderId}
 *الاسم:* ${data.customerName}
 *الموبايل:* ${data.phone}
@@ -93,17 +94,22 @@ ${itemsList}
 
 ${data.notes ? `*ملاحظات:* ${data.notes}` : ''}`;
 
-          const encodedMessage = encodeURIComponent(message);
-          const storeOwnerPhone = '201029757694';
-          const waUrl = `https://wa.me/${storeOwnerPhone}?text=${encodedMessage}`;
-          
-          clearCart();
-          setSuccessOrder({ id: order.orderId, whatsappUrl: waUrl });
-        }
-      });
-    } catch (error) {
-      console.error(error);
-    }
+        const encodedMessage = encodeURIComponent(message);
+        const storeOwnerPhone = '201029757694';
+        const waUrl = `https://wa.me/${storeOwnerPhone}?text=${encodedMessage}`;
+        
+        clearCart();
+        setSuccessOrder({ id: order.orderId, whatsappUrl: waUrl });
+      },
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : 'فشل إرسال الطلب، يرجى المحاولة مرة أخرى';
+        toast({
+          title: 'حدث خطأ',
+          description: message,
+          variant: 'destructive',
+        });
+      },
+    });
   };
 
   return (
@@ -202,7 +208,7 @@ ${data.notes ? `*ملاحظات:* ${data.notes}` : ''}`;
                 {items.map(item => (
                   <div key={item.book.id} className="flex gap-4 items-center">
                     <div className="w-12 h-16 rounded overflow-hidden bg-muted/20 shrink-0">
-                      {item.book.coverImage && <img src={item.book.coverImage} className="w-full h-full object-cover" />}
+                      {item.book.coverImage && <img src={item.book.coverImage} alt={item.book.titleAr} className="w-full h-full object-cover" />}
                     </div>
                     <div className="flex-1 text-sm">
                       <div className="font-bold line-clamp-1">{item.book.titleAr}</div>

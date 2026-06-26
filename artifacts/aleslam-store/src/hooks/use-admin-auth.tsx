@@ -21,6 +21,11 @@ const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
 
 const TOKEN_KEY = "aleslam_admin_token";
 
+function apiUrl(path: string): string {
+  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+  return `${base}${path}`;
+}
+
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -36,7 +41,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     const controller = new AbortController();
 
-    fetch("/api/admin/me", {
+    fetch(apiUrl("/api/admin/me"), {
       headers: { Authorization: `Bearer ${storedToken}` },
       signal: controller.signal,
     })
@@ -79,7 +84,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     setLocation("/admin/login");
     // Fire-and-forget server-side session deletion
     if (currentToken) {
-      fetch("/api/admin/logout", {
+      fetch(apiUrl("/api/admin/logout"), {
         method: "POST",
         headers: { Authorization: `Bearer ${currentToken}` },
       }).catch(() => {

@@ -11,6 +11,7 @@ import {
   TrackOrderQueryParams,
 } from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
+import { requireAdmin, type AdminRequest } from "../middleware/adminAuth";
 
 const router = Router();
 
@@ -51,7 +52,7 @@ function mapOrder(
   };
 }
 
-// GET /orders/track
+// GET /orders/track — public (customers track their own orders)
 router.get("/orders/track", async (req, res) => {
   try {
     const params = TrackOrderQueryParams.parse(req.query);
@@ -81,43 +82,7 @@ router.get("/orders/track", async (req, res) => {
   }
 });
 
-// GET /orders
-router.get("/orders", async (req, res) => {
-  try {
-    const query = ListOrdersQueryParams.parse(req.query);
-    const where = query.status ? eq(ordersTable.status, query.status as any) : undefined;
-
-    const orders = await db
-      .select()
-      .from(ordersTable)
-      .where(where)
-      .orderBy(desc(ordersTable.createdAt));
-
-    // Fetch items for exactly these orders — avoids loading the entire table
-    const orderIds = orders.map((o) => o.orderId);
-    const allItems =
-      orderIds.length > 0
-        ? await db
-            .select()
-            .from(orderItemsTable)
-            .where(inArray(orderItemsTable.orderId, orderIds))
-        : [];
-
-    const itemsByOrderId = new Map<string, typeof allItems>();
-    for (const item of allItems) {
-      const bucket = itemsByOrderId.get(item.orderId) ?? [];
-      bucket.push(item);
-      itemsByOrderId.set(item.orderId, bucket);
-    }
-
-    res.json(orders.map((o) => mapOrder(o, itemsByOrderId.get(o.orderId) ?? [])));
-  } catch (err) {
-    req.log.error({ err }, "Failed to list orders");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// POST /orders
+// POST /orders — public (customers place orders)
 router.post("/orders", async (req, res) => {
   try {
     const body = CreateOrderBody.parse(req.body);
@@ -221,8 +186,43 @@ router.post("/orders", async (req, res) => {
   }
 });
 
-// GET /orders/:id
-router.get("/orders/:id", async (req, res) => {
+// GET /orders — admin only (contains customer PII)
+router.get("/orders", requireAdmin, async (req: AdminRequest, res) => {
+  try {
+    const query = ListOrdersQueryParams.parse(req.query);
+    const where = query.status ? eq(ordersTable.status, query.status as any) : undefined;
+
+    const orders = await db
+      .select()
+      .from(ordersTable)
+      .where(where)
+      .orderBy(desc(ordersTable.createdAt));
+
+    const orderIds = orders.map((o) => o.orderId);
+    const allItems =
+      orderIds.length > 0
+        ? await db
+            .select()
+            .from(orderItemsTable)
+            .where(inArray(orderItemsTable.orderId, orderIds))
+        : [];
+
+    const itemsByOrderId = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      const bucket = itemsByOrderId.get(item.orderId) ?? [];
+      bucket.push(item);
+      itemsByOrderId.set(item.orderId, bucket);
+    }
+
+    res.json(orders.map((o) => mapOrder(o, itemsByOrderId.get(o.orderId) ?? [])));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list orders");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /orders/:id — admin only
+router.get("/orders/:id", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const { id } = GetOrderParams.parse({ id: Number(req.params.id) });
     const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id));
@@ -243,8 +243,8 @@ router.get("/orders/:id", async (req, res) => {
   }
 });
 
-// PATCH /orders/:id
-router.patch("/orders/:id", async (req, res) => {
+// PATCH /orders/:id — admin only (status update)
+router.patch("/orders/:id", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const { id } = UpdateOrderStatusParams.parse({ id: Number(req.params.id) });
     const body = UpdateOrderStatusBody.parse(req.body);

@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { booksTable, ordersTable } from "@workspace/db";
-import { eq, sql, sum } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { requireAdmin, type AdminRequest } from "../middleware/adminAuth";
 
 const router = Router();
 
-// GET /stats/store
-router.get("/stats/store", async (req, res) => {
+// GET /stats/store — admin only
+router.get("/stats/store", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const [
       totalBooksResult,

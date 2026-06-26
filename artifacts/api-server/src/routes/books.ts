@@ -10,10 +10,11 @@ import {
   DeleteBookParams,
   GetBookParams,
 } from "@workspace/api-zod";
+import { requireAdmin, type AdminRequest } from "../middleware/adminAuth";
 
 const router = Router();
 
-// GET /books
+// GET /books — public
 router.get("/books", async (req, res) => {
   try {
     const query = ListBooksQueryParams.parse(req.query);
@@ -65,8 +66,85 @@ router.get("/books", async (req, res) => {
   }
 });
 
-// POST /books
-router.post("/books", async (req, res) => {
+// GET /books/featured — public
+router.get("/books/featured", async (req, res) => {
+  try {
+    const books = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.isFeatured, true))
+      .orderBy(desc(booksTable.createdAt))
+      .limit(12);
+    res.json(books.map(mapBook));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get featured books");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /books/best-sellers — public
+router.get("/books/best-sellers", async (req, res) => {
+  try {
+    const books = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.isBestSeller, true))
+      .orderBy(desc(booksTable.soldCount))
+      .limit(12);
+    res.json(books.map(mapBook));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get best sellers");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /books/new-arrivals — public
+router.get("/books/new-arrivals", async (req, res) => {
+  try {
+    const books = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.isNewArrival, true))
+      .orderBy(desc(booksTable.createdAt))
+      .limit(12);
+    res.json(books.map(mapBook));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get new arrivals");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /books/on-sale — public
+router.get("/books/on-sale", async (req, res) => {
+  try {
+    const books = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.isOnSale, true))
+      .orderBy(desc(booksTable.createdAt))
+      .limit(12);
+    res.json(books.map(mapBook));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get books on sale");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /books/:id — public
+router.get("/books/:id", async (req, res) => {
+  try {
+    const { id } = GetBookParams.parse({ id: Number(req.params.id) });
+    const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
+    if (!book) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(mapBook(book));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get book");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /books — admin only
+router.post("/books", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const body = CreateBookBody.parse(req.body);
     const [book] = await db
@@ -87,85 +165,8 @@ router.post("/books", async (req, res) => {
   }
 });
 
-// GET /books/featured
-router.get("/books/featured", async (req, res) => {
-  try {
-    const books = await db
-      .select()
-      .from(booksTable)
-      .where(eq(booksTable.isFeatured, true))
-      .orderBy(desc(booksTable.createdAt))
-      .limit(12);
-    res.json(books.map(mapBook));
-  } catch (err) {
-    req.log.error({ err }, "Failed to get featured books");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /books/best-sellers
-router.get("/books/best-sellers", async (req, res) => {
-  try {
-    const books = await db
-      .select()
-      .from(booksTable)
-      .where(eq(booksTable.isBestSeller, true))
-      .orderBy(desc(booksTable.soldCount))
-      .limit(12);
-    res.json(books.map(mapBook));
-  } catch (err) {
-    req.log.error({ err }, "Failed to get best sellers");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /books/new-arrivals
-router.get("/books/new-arrivals", async (req, res) => {
-  try {
-    const books = await db
-      .select()
-      .from(booksTable)
-      .where(eq(booksTable.isNewArrival, true))
-      .orderBy(desc(booksTable.createdAt))
-      .limit(12);
-    res.json(books.map(mapBook));
-  } catch (err) {
-    req.log.error({ err }, "Failed to get new arrivals");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /books/on-sale
-router.get("/books/on-sale", async (req, res) => {
-  try {
-    const books = await db
-      .select()
-      .from(booksTable)
-      .where(eq(booksTable.isOnSale, true))
-      .orderBy(desc(booksTable.createdAt))
-      .limit(12);
-    res.json(books.map(mapBook));
-  } catch (err) {
-    req.log.error({ err }, "Failed to get books on sale");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /books/:id
-router.get("/books/:id", async (req, res) => {
-  try {
-    const { id } = GetBookParams.parse({ id: Number(req.params.id) });
-    const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
-    if (!book) { res.status(404).json({ error: "Not found" }); return; }
-    res.json(mapBook(book));
-  } catch (err) {
-    req.log.error({ err }, "Failed to get book");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// PATCH /books/:id
-router.patch("/books/:id", async (req, res) => {
+// PATCH /books/:id — admin only
+router.patch("/books/:id", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const { id } = UpdateBookParams.parse({ id: Number(req.params.id) });
     const body = UpdateBookBody.parse(req.body);
@@ -188,11 +189,12 @@ router.patch("/books/:id", async (req, res) => {
   }
 });
 
-// DELETE /books/:id
-router.delete("/books/:id", async (req, res) => {
+// DELETE /books/:id — admin only
+router.delete("/books/:id", requireAdmin, async (req: AdminRequest, res) => {
   try {
     const { id } = DeleteBookParams.parse({ id: Number(req.params.id) });
-    await db.delete(booksTable).where(eq(booksTable.id, id));
+    const [deleted] = await db.delete(booksTable).where(eq(booksTable.id, id)).returning();
+    if (!deleted) { res.status(404).json({ error: "Not found" }); return; }
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete book");

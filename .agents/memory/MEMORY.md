@@ -1,0 +1,1 @@
+- [API security model](api-security-model.md) — which routes are public vs admin-only; git push to origin times out (network constraint).

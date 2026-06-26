@@ -7,20 +7,41 @@ import { logger } from "./lib/logger";
 const app: Express = express();
 
 // ── CORS ────────────────────────────────────────────────────────────────────
-// In production, restrict to the Replit-assigned domains (REPLIT_DOMAINS is a
-// comma-separated list of hostnames). In development every origin is allowed.
-const productionOrigins: string[] = process.env.REPLIT_DOMAINS
-  ? process.env.REPLIT_DOMAINS.split(",").flatMap((d) => [
-      `https://${d.trim()}`,
-      `http://${d.trim()}`,
-    ])
-  : [];
+// Allowed origins are resolved from environment variables:
+//  - ALLOWED_ORIGINS: comma-separated list of allowed origins (Vercel, custom domains)
+//  - REPLIT_DOMAINS: comma-separated hostnames set by Replit in production
+// In development every origin is allowed.
+function buildAllowedOrigins(): string[] {
+  const origins: string[] = [];
+
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(",").forEach((o) => {
+      const trimmed = o.trim();
+      if (trimmed) origins.push(trimmed);
+    });
+  }
+
+  if (process.env.REPLIT_DOMAINS) {
+    process.env.REPLIT_DOMAINS.split(",").flatMap((d) => {
+      const trimmed = d.trim();
+      if (trimmed) {
+        origins.push(`https://${trimmed}`);
+        origins.push(`http://${trimmed}`);
+      }
+    });
+  }
+
+  return origins;
+}
+
+const productionOrigins = buildAllowedOrigins();
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // same-origin / server-to-server
       if (process.env.NODE_ENV !== "production") return callback(null, true);
+      if (productionOrigins.length === 0) return callback(null, true); // no restrictions configured
       if (productionOrigins.includes(origin)) return callback(null, true);
       callback(new Error(`Origin "${origin}" not allowed by CORS`));
     },
