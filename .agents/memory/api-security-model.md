@@ -1,6 +1,6 @@
 ---
-name: API security model
-description: Which routes are intentionally public vs admin-only, and deployment notes.
+name: API security model & Vercel deployment config
+description: Which routes are public vs admin-only, Vercel deployment setup, and deployment notes.
 ---
 
 ## Public routes (no auth required)
@@ -19,10 +19,16 @@ description: Which routes are intentionally public vs admin-only, and deployment
 
 **Why:** Books mutation and order listing exposed customer PII without auth. Fixed in Task 1.
 
-## Vercel compatibility
-- CORS supports `ALLOWED_ORIGINS` env var (comma-separated full origins) in addition to `REPLIT_DOMAINS`.
-- Frontend supports `VITE_API_BASE_URL` env var to point to a separate API deployment.
-- `artifacts/aleslam-store/vercel.json` contains SPA routing rewrites.
+## Vercel deployment setup (Task 2)
+- Root-level `vercel.json` is the authoritative config. Vercel must point at the REPO ROOT (not a subdirectory) so pnpm workspace resolves `workspace:*` deps correctly.
+- `buildCommand`: `pnpm --filter @workspace/aleslam-store build` (frontend only, skips api-server)
+- `outputDirectory`: `artifacts/aleslam-store/dist` (Vite outDir changed from dist/public to dist)
+- `installCommand`: `pnpm install --frozen-lockfile`
+- Root vercel.json also at `artifacts/aleslam-store/vercel.json` for completeness.
+- `VITE_API_BASE_URL` env var required in Vercel dashboard (points to deployed API server URL).
+- DATABASE_URL is NOT needed for the frontend-only Vercel deployment.
+
+**Why outDir was changed:** Was `dist/public`, Vercel expects `dist`. The `dist/public` path caused Vercel to serve a directory that contained only a `public/` subdirectory — index.html was one level deeper than expected → 404.
 
 ## Git push note
 `git push origin main` times out in the Replit main agent (network constraint).
